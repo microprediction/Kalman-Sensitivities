@@ -1,0 +1,73 @@
+\documentclass[a4paper,11pt]{article} 
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{shapes}
+\usepackage{natbib}
+\usepackage{hyperref}
+
+\title{Kalman Filter Data Sensitivities \\ An Example of an Adjoint Calculation}
+
+\author{Peter Cotton}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+By reformulating the Kalman filter as a least squares problem (in the manner of the Duncan-Horn representation, essentially) and then applying an adjoint calculation, we compute sensitivities of predictions with respect to past observations. 
+\end{abstract}
+
+\section{The Kalman Filter}
+
+Consider a sequence of observations $t_1,...,t_k$ at which a latent vector process $x$ is observed indirectly, via an observation equation \begin{equation} y_{t_i} = H_i x_{t_i} + \epsilon_i \end{equation} We assume $\epsilon_i$ is mean zero multivariate gaussian with covariance $R_i$. For brevity we refer to $y_{t_i}$ as $y_i$, $x_{t_i}$ as $x_i$ and so forth. We assume the evolution of $x$ in between the times specified can be written \begin{equation} x_{i+1} = A_i x_i + u_i \end{equation} where $u_i$ are also gaussian. In this linear gaussian system the recursive estimation of $x_t$ is achieved by the well known Kalman filter, and the contemporaneous impact of the next observation $y_{k+1}$ is also (it is merely proportional to the Kalman gain).
+
+But less well appreciated is a related computation, the derivatives of the Kalman filter estimate with respect to a past observation $y_i$. This note establishes how said computation can be achieved by making two observations. The first is a re-representation of the Kalman estimate in the form of a weighted least squares problem (not dissimilar to the Duncan Horn representation). The second observation is that sensitivities of any weighted least squares problem can be computed using an adjoint trick.
+
+\section{The Kalman filter solution as a (particular) least squares problem}
+
+We shall set up a least squares problem involving the current state $x_k$ only, and all the previous observations. We argue that the solution to this problem is identical to the Kalman filter. Since the current estimate $\hat{y}_k$ is a simple linear function of the current state $x_k$, this allows us to compute the derivative of the current estimate with respect to all previous observations.
+
+In the Kalman filter we assume a gaussian prior on the initial state $x_0$. This can introduce annoying special cases in what follows, but we can clean up the notation instead by introducing: \begin{eqnarray}    y_{-1} & = & H_{-1} x_{-1} + \epsilon_{-1} \\ x_0 & = & A_{-1} x_{-1} + u_{-1} \end{eqnarray} provided $H_{-1}$ and $A_{-1}$ are identity matrices, $\epsilon{-1}$ is identically zero, $y_{-1}$ is set equal to the mean of our prior and $u_0$ adopts its covariance. 
+
+With the boundary conditions cleaned up in this fashion we can invert the dynamical equations, assuming only that $A$'s have left inverses $A^{-1}$, as follows: 
+
+\begin{equation} x_j = A^{-1}_{j}\left( x_{j+1} - u_j \right) 
+\end{equation} and then re-arrange the observation equations so that the only value of $x_i$ that appears is $x_k$. 
+\begin{eqnarray} 
+   y_k & = & H_k x_{k} + \epsilon_k \\ y_{k-1} & = & H_{k-1} x_{k-1} + \epsilon_{k-1} \\ & = & H_{k-1} \left( A^{-1}_{k-1}\left( x_{k} - u_{k-1} \right) \right) + \epsilon_{k-1} \\ & = & H_{k-1} A^{-1}_{k-1} x_{k} - H_{k-1} A^{-1}_{k-1} u_{k-1} + \epsilon_{k-1} \\ y_{k-2} & = & H_{k-2} x_{k-2} + \epsilon_{k-2} \\ 
+ & = & H_{k-2} \left( A^{-1}_{k-2}\left( x_{k-1} - u_{k-2} \right) \right) + \epsilon_{k-2} \\ & = & H_{k-2} A^{-1}_{k-2} x_{k-1} - H_{k-2} A^{-1}_{k-2} u_{k-2} + \epsilon_{k-2} \\ 
+ & = & H_{k-2} A^{-1}_{k-2} \left( A^{-1}_{k-1}\left( x_{k} - u_{k-1} \right) \right) - H_{k-2} A^{-1}_{k-2} u_{k-2} + \epsilon_{k-2} \\     
+ & = & H_{k-2} A^{-1}_{k-2} A^{-1}_{k-1} x_{k} - H_{k-2} A^{-1}_{k-2} A^{-1}_{k-1} u_{k-1} - H_{k-2} A^{-1}_{k-2} u_{k-2} + \epsilon_{k-2} \\ & \dots & 
+ \end{eqnarray} from which it is apparent that if we write $Y = (y_k, y_{k-1}, y_{k-2},...,y_{-1} ) $ then \begin{equation} Y = G x_{k} + \eta \end{equation} where $G$ is the concatenation of the coefficients of $x_k$ given above and $\eta$ is the gaussian random variable equal to the sum of $u_k$'s and $\epsilon_k$'s (again, with coefficients as above, leading to a non-trivial covariance structure).
+
+\section{The adjoint calculation}
+
+Suppose $x$ solves $Qx = b(y)$. The adjoint trick can be used to compute the derivative of $g(x)$ w.r.t. y. In particular, if $y$ is the observation and $x$ the solution of a generalized least squares problem with error covariance $R$ we can cast it in this form by writing: 
+\begin{eqnarray} g(x)& = & H x Q \\ 
+                   & = & H^T R^{-1} H \\ 
+            b(y) & = & H^T R^{-1} y 
+\end{eqnarray} Consider now \begin{equation} f(x,y) = 0 \end{equation} where 
+\begin{equation} f(x,y) = Q x - b(y) 
+\end{equation} 
+We use derivatives of 
+\begin{equation} \tilde{g} = g - \lambda^T f(x,y) 
+\end{equation} with respect to $y$ as a means of computing derivatives of $g$ with respect to $y$. Note that \begin{equation} \frac{\partial \tilde{g}}{\partial y} = \frac{\partial g}{\partial x}\frac{\partial x}{\partial y} - \lambda^T \left( \frac{ \partial f }{\partial x }\frac{\partial x}{\partial y} + \frac{\partial f}{\partial y} \right) \end{equation} and this will simplify if we choose $\lambda$ judiciously as a solution of \begin{equation} \frac{\partial g}{\partial x } = \lambda^T \frac{\partial f}{\partial x} \end{equation} which we call the adjoint equation. For then 
+\begin{eqnarray} \frac{\partial \tilde{g}}{\partial y} 
+      & = & \frac{\partial g}{\partial x}\frac{\partial x}{\partial y} - \lambda^T \left( \frac{ \partial f }{\partial x }\frac{\partial x}{\partial y} + \frac{\partial f}{\partial y} \right) \\
+      & = & -\lambda^T \frac{\partial f}{\partial y} \\
+      & = & \lambda^T \frac{\partial b}{\partial y} \end{eqnarray}
+Now specializing to \begin{equation} g(x) = H x \end{equation} and $b(y)$ as above we can solve for this convenient choice of $\lambda$ by writing 
+\begin{eqnarray} H & = & \frac{\partial g}{\partial x} \\
+     & = & \lambda^T \frac{\partial f}{\partial x} \\
+     & = & \lambda^T Q \\ 
+     & = & \lambda^T H^T R^{-1} H 
+     \end{eqnarray} where the second equality is the adjoint equation. It should be clear from this how to compute derivatives of $\tilde{g}$ with respect to $y$, and thereby compute derivatives of $g$ with respect to $y$.
+
+\bibliographystyle{unsrt}
+
+\end{document}
